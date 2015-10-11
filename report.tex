@@ -1,0 +1,37 @@
+Abstract
+--------
+A common way of providing resiliency against disk loss in a storage system is RAID. A typical RAID group consists of a bunch of D data disks and P parity disks. Every data block written to disk is first buffered and its parity computed using XOR or Erasure Coding. Once this is done, the data is written parallelly to all data and parity disks. In this project, we investigate if GPUs can be used to parallelize the parity computation, thereby improving the performance of RAID compute and rebuild.
+
+Introduction
+------------
+The goal of the project is to parallelize RAID operation - which is a common form to provide resiliency against disk loss for a group of disks. A typical RAID construct consists of a group of disks D+P, where D is the number of data disks and P is the number of Parity disks.
+
+
+Related Work
+------------
+
+6 Talks about using GPU for EC. However there exploration is limited to 3 data and 3 parity disks. Moreover there analysis is only limited to encode operation, they do not explore the speedup during data recovery.
+
+
+References
+----------
+
+1. S^2 RAID - Parallel RAID Architecture for Fast Data Recovery.
+
+2. Ticker TIAP - Parallel RAID Architecture
+
+3. RAID Tuorial - SIGARCH 95- Garth Gibson.
+
+4. GPFS - Native Raid
+
+5. MP RAID - Multiple Parallel RAID architecture for multimedia Servers
+
+6. Acellerating RS Coding in RAID systems with GPUs.
+
+7. GPU Store: Harnessing GPU Computing for Storage Systems in the OS Kernel
+
+8. http://web.eecs.utk.edu/~plank/plank/papers/CS-07-593/index.html
+
+9. http://web.eecs.utk.edu/~plank/plank/papers/CS-13-716.html
+http://web.eecs.utk.edu/~plank/plank/papers/GF-Complete-Archive.pdf
+
