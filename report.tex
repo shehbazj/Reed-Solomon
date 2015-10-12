@@ -6,6 +6,13 @@ Introduction
 ------------
 The goal of the project is to parallelize RAID operation - which is a common form to provide resiliency against disk loss for a group of disks. A typical RAID construct consists of a group of disks D+P, where D is the number of data disks and P is the number of Parity disks.
 
+Experiments
+-----------
+
+1. Run Sysprof for multiple sized files -  To understand where encode/decode starts becoming bottleneck.
+2. Run Sysprof for multiple code words.
+3. Decode operation.
+4. Decode and Encode operation (Recovery).
 
 Related Work
 ------------

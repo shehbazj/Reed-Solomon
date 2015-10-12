@@ -76,4 +76,4 @@ gf_xor: gf_xor.o galois.o
 
 rs_ec: rs_ec.o galois.o
 	@echo Making $@ from $<
-	$(CPP) $(CPPFLAGS) -o rs_ec galois.o rs_ec.o
+	$(CC) $(CFLAGS) -o rs_ec galois.o rs_ec.o
