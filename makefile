@@ -22,7 +22,7 @@
 # plank@cs.utk.edu
 
 CC = gcc  
-CFLAGS = -O3 -I$(HOME)/include
+CFLAGS = -O3 -I$(HOME)/include -g
 
 CPP = g++
 CPPFLAGS = -O3 -I$(HOME)/include
