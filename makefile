@@ -24,17 +24,22 @@
 CC = gcc  
 CFLAGS = -O3 -I$(HOME)/include
 
-ALL =	gf_mult gf_div gf_xor gf_log gf_ilog gf_basic_tester gf_inverse gf_xor_tester
+CPP = g++
+CPPFLAGS = -O3 -I$(HOME)/include
+
+ALL =	gf_mult gf_div gf_xor gf_log gf_ilog gf_basic_tester gf_inverse gf_xor_tester rs_ec
 
 all: $(ALL)
 
 clean:
 	rm -f core *.o $(ALL) a.out
 
-.SUFFIXES: .c .o
+.SUFFIXES: .cpp .c .o
 .c.o:
 	$(CC) $(CFLAGS) -c $*.c
 
+.cpp.o:
+	$(CPP) $(CPPFLAGS) -c $*.cpp
 
 galois.o: galois.h
 
@@ -68,3 +73,7 @@ gf_div: gf_div.o galois.o
 
 gf_xor: gf_xor.o galois.o
 	$(CC) $(CFLAGS) -o gf_xor gf_xor.o
+
+rs_ec: rs_ec.o galois.o
+	@echo Making $@ from $<
+	$(CPP) $(CPPFLAGS) -o rs_ec galois.o rs_ec.o
