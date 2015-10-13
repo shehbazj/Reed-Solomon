@@ -32,19 +32,23 @@ print2DMatrix(int **F, int row, int col)
 void encode(int fd, int n , int m, int outputFileMode)
 {
 	// alloc matrix
-	int *D = (int *)malloc (sizeof (int) * n);
-	int **F = (int **)malloc (sizeof (int *) *(n + m));
 	int i,j,k;
+	int dataBlockSize = 1;	// number of parallel Data Blocks to be used
+
+	int **D = (int **)malloc (sizeof (int *) * n);
+	for(i=0; i < n ; i++){
+		D[i] = (int *)malloc(sizeof(int) * dataBlockSize);
+	}
+
+	int **F = (int **)malloc (sizeof (int *) * (n + m));
 	for(i=0; i < n + m; i++){
 		F[i] = (int *)malloc(sizeof(int) * (n));
 	}			
+
 	int **C = (int **)malloc(sizeof(int *) * (n+m));
-	for(i=0; i < 1; i++){
-		C[i] = (int *)malloc(sizeof(int) * (1));
+	for(i=0; i < n +m ; i++){
+		C[i] = (int *)malloc(sizeof(int) * dataBlockSize);
 	}			
-
-
-
 
 	// get size of file
 	struct stat buf;
@@ -70,14 +74,19 @@ void encode(int fd, int n , int m, int outputFileMode)
 	bool done = false;
 	while(!done){
 	
-	// intitalize D - data matrix
+		// intitalize D - data matrix
 
-		int bytesRead = read(fd, D, n * sizeof(int));
-		if(bytesRead  == 0){
-			done = true;
-		}		
+		for(i=0; i < n ; i++){
+			for(j=0; j < dataBlockSize ; j++){
+	       			int bytesRead = read(fd, &D[i][j], sizeof(int));
+				if(bytesRead  == 0){
+					done = true;
+				}		
+			}
+		}
+	
 		// multiply. and store checksum in C 
-/*
+	
 		for(i = 0 ; i < n+m ; i++){
 			for(j=0; j< 1 ; j++){
 				for(k = 0; k < n ; k++){
@@ -85,18 +94,18 @@ void encode(int fd, int n , int m, int outputFileMode)
 				}
 			}
 		}	
-*/	
-	}
-	print2DMatrix(C, m+n, 1);
-	
+		// copy to different files
 
-	// copy to different files
+	}	// repeat 
 
-	// repeat 
+//	print2DMatrix(C, m+n, dataBlockSize);
 
 	// free memory
+	for (i=0; i < n ; i++){
+		free(D[i]);
+	}
 	free(D);
-	for (i=0; i < n; i++){
+	for (i=0; i < n + m ; i++){
 		free(F[i]);
 	}	
 	free(F);
