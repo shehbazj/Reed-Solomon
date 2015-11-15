@@ -1,3 +1,5 @@
+infile
+out/*
 *.o
 gf_basic_tester
 gf_div

@@ -7,6 +7,7 @@
 #include<fcntl.h>
 #include<stdbool.h>
 #include<errno.h>
+#include<assert.h>
 
 #include"galois.h"
 
@@ -17,6 +18,7 @@ int power(int x, int y){
 		return x * power(x , y-1);
 }
 
+/*
 print2DMatrix(int **F, int row, int col)
 {
 	int i, j;
@@ -28,12 +30,13 @@ print2DMatrix(int **F, int row, int col)
 		printf("\n");
 	}
 }
+*/
 
-void encode(int fd, int n , int m, int outputFileMode)
+void encode(int inputFD, int n , int m, int outputFileMode, int *outFiles)
 {
 	// alloc matrix
 	int i,j,k;
-	int dataBlockSize = 1;	// number of parallel Data Blocks to be used
+	int dataBlockSize = 4;	// number of parallel Data Blocks to be used
 
 	int **D = (int **)malloc (sizeof (int *) * n);
 	for(i=0; i < n ; i++){
@@ -50,10 +53,20 @@ void encode(int fd, int n , int m, int outputFileMode)
 		C[i] = (int *)malloc(sizeof(int) * dataBlockSize);
 	}			
 
+	// TODO redirect all traffic to /dev/null when outputFileMode is 0
+
+	outFiles = (int *)malloc(sizeof(int) * (n+m));
+	static char *filePath = "out/file";
+	char *fileName = (char *)malloc(strlen(filePath) +2 );
+	for(i = 0 ; i < (n+m); i++){
+		strcpy(fileName, filePath);
+		fileName[(strlen(filePath))] = (char)(i + 48);	
+		outFiles[i] = open(fileName,O_RDWR | O_CREAT , S_IRWXU);	
+	}
+
 	// get size of file
 	struct stat buf;
-	fstat(fd,&buf);
-
+	fstat(inputFD,&buf);
 	off_t size = buf.st_size;
 	
 	printf("file size = %zd\n", size);
@@ -73,20 +86,19 @@ void encode(int fd, int n , int m, int outputFileMode)
 
 	bool done = false;
 	while(!done){
-	
 		// intitalize D - data matrix
-
 		for(i=0; i < n ; i++){
 			for(j=0; j < dataBlockSize ; j++){
-	       			int bytesRead = read(fd, &D[i][j], sizeof(int));
+	       			int bytesRead = read(inputFD, &D[i][j], sizeof(int));
 				if(bytesRead  == 0){
 					done = true;
-				}		
+				}/*else{	// check if data was being read
+					printf("read %d data\n", bytesRead);
+				}*/
 			}
 		}
 	
-		// multiply. and store checksum in C 
-	
+		// multiply. and store product in C 
 		for(i = 0 ; i < n+m ; i++){
 			for(j=0; j< 1 ; j++){
 				for(k = 0; k < n ; k++){
@@ -94,11 +106,14 @@ void encode(int fd, int n , int m, int outputFileMode)
 				}
 			}
 		}	
+		
 		// copy to different files
-
+		for(i=0;i<(n+m); i++){
+			if(write(outFiles[i], &C[i][0], sizeof(int))==-1){
+				printf("Error during write:%s", strerror(errno));	
+			}
+		}
 	}	// repeat 
-
-//	print2DMatrix(C, m+n, dataBlockSize);
 
 	// free memory
 	for (i=0; i < n ; i++){
@@ -137,12 +152,34 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	printf("Generating Input Data...\n");
+
+	if(system("dd if=/dev/urandom of=infile bs=4096 count=2560") == -1){
+		printf("could not create input file\n");
+		assert(0);
+	}
+	
+	printf("Input Data Generation Completed!\n");
+
+	if(system("rm -rf out; mkdir out") == -1){
+		printf("unable to create output folder\n");
+		assert(0);
+	}
+
 	int n, m, outputFileMode;
+	int *outFiles;
 	n = atoi (argv[2]);
 	m = atoi (argv[3]);
 	outputFileMode = atoi (argv[4]);
 
-	encode(fd, n , m, outputFileMode);
+	if(n+m >= 10){
+		printf("Cannot create more than 10 out files. Please fix file naming convention in encode function\n");
+		assert(0);
+	}
+
+	printf("Encode Start...\n");
+	encode(fd, n , m, outputFileMode, outFiles);
+	printf("Encode Completed!\n");
 		
 	return 0;
 }
