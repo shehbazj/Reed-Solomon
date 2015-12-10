@@ -131,11 +131,16 @@ void encode(int inputFD, int *outFiles)
 
 	outFiles = (int *)malloc(sizeof(int) * M);
 	static char *filePath = "out/file";
-	char *fileName = (char *)malloc(strlen(filePath) +3 );
+	char *fileName = (char *)malloc(strlen(filePath) +6 );
 	for(i = 0 ; i < M; i++){
-		strcpy(fileName, filePath);
-		fileName[(strlen(filePath))] = (char)(i + 48);
-		outFiles[i] = open(fileName,O_RDWR | O_CREAT , S_IRWXU);
+//		strcpy(fileName, filePath);
+//		char name[4];
+//		name[0] = (char)random();
+//		name[1] = (char) random(); 
+//		name[2] = (char) random();
+//       		name[3] = (char) random();
+//		strcpy(&fileName[(strlen(filePath))],name );
+		outFiles[i] = open("/dev/null",O_RDWR | O_CREAT , S_IRWXU);
 	}
 
 	// get size of file
@@ -337,7 +342,7 @@ int main(int argc, char *argv[])
 	encode(fd , outFiles);
 	printf("Encode Completed!\n");
 	close(fd);
-
+/*
 	fd = open("out/outfile",O_WRONLY | O_CREAT, S_IRWXU | S_IRWXG | S_IRWXO);
 
 	int missingBlockNumbers[1];
@@ -385,6 +390,6 @@ int main(int argc, char *argv[])
 //	decode(fd, outFiles , K , M-K , missingBlockNumbers, 1);
 	free (outFiles);
 	printf("Decode End\n");
-
+*/
 	return 0;
 }
