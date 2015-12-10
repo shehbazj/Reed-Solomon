@@ -22,10 +22,10 @@
 # plank@cs.utk.edu
 
 CC = gcc  
-CFLAGS = -O3 -I$(HOME)/include -g
+CFLAGS = -I$(HOME)/include -pg -g -lpthread
 
 CPP = g++
-CPPFLAGS = -O3 -I$(HOME)/include
+CPPFLAGS = -I$(HOME)/include
 
 ALL =	gf_mult gf_div gf_xor gf_log gf_ilog gf_basic_tester gf_inverse gf_xor_tester rs_ec
 
@@ -74,6 +74,7 @@ gf_div: gf_div.o galois.o
 gf_xor: gf_xor.o galois.o
 	$(CC) $(CFLAGS) -o gf_xor gf_xor.o
 
-rs_ec: rs_ec.o galois.o
+rs_ec: rs_ec.o galois.o multiply.c rs_ec.h
 	@echo Making $@ from $<
-	$(CC) $(CFLAGS) -o rs_ec galois.o rs_ec.o
+	$(CC) $(CFLAGS) -c multiply.c -lpthread
+	$(CC) $(CFLAGS) -o rs_ec galois.o rs_ec.o multiply.o -lpthread

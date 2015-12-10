@@ -1,4 +1,7 @@
 infile
+40M
+4M
+tags
 out/*
 *.o
 gf_basic_tester
