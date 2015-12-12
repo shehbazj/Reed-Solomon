@@ -74,7 +74,8 @@ gf_div: gf_div.o galois.o
 gf_xor: gf_xor.o galois.o
 	$(CC) $(CFLAGS) -o gf_xor gf_xor.o
 
-rs_ec: rs_ec.o galois.o multiply.c rs_ec.h
+rs_ec: rs_ec.o rs_ec.c multiply.c rs_ec.h
 	@echo Making $@ from $<
 	$(CC) $(CFLAGS) -c multiply.c -lpthread
-	$(CC) $(CFLAGS) -o rs_ec galois.o rs_ec.o multiply.o -lpthread
+	$(CC) $(CFLAGS) -c rs_ec.c 
+	$(CC) $(CFLAGS) -o rs_ec rs_ec.o multiply.o -fopenmp -lpthread

@@ -14,13 +14,17 @@
 //#include"galois.h"
 #include "rs_ec.h"
 
-//#define USE_PTHREAD
+#ifdef USE_PTHREAD
+extern void multiplyp(int **C, int **A, int **B, int M, int K, int N);
+#endif
+#ifdef USE_SEQUENTIAL
+extern void multiplys(int **C, int **A, int **B, int M, int K, int N);
+#endif
+#ifdef USE_OPENMP
+extern void multiplyo(int **C, int **A, int **B, int M, int K, int N);
+#endif
 
-int A[M][K];
-int B[K][N];
-int C[M][N];
 
-extern void multiplys();
 
 int power(int x, int y){
 	if(y == 0)
@@ -28,20 +32,6 @@ int power(int x, int y){
 	else
 		return x * power(x , y-1);
 }
-
-/*
-print2DMatrix(int **F, int row, int col)
-{
-	int i, j;
-	printf("\n");
-	for(i = 0 ; i< row ; i++){
-		for(j=0 ; j < col; j++){
-			printf("%d\t", F[i][j]);
-		}
-		printf("\n");
-	}
-}
-*/
 
 float **invert(int **B, int *missingRows, int numRows , int numCols){
 // TODO replace this by invert function
@@ -57,7 +47,7 @@ float **invert(int **B, int *missingRows, int numRows , int numCols){
 	}
 
 // TODO replace this by invert function
-	return B_prime;/*
+	return B_inv;/*
     // calculate B_prime
     int k = 0;
     int p = 0;
@@ -124,7 +114,34 @@ float **invert(int **B, int *missingRows, int numRows , int numCols){
     return B_inv;*/
 }
 
-void encode(int inputFD, int *outFiles)
+int ** initMatrix(int **M , int rows, int cols)
+{
+	int i;
+	M = (int **)malloc(sizeof(int *) * rows);
+	for(i = 0 ; i < rows ; i++)
+		M[i] = (int *)malloc(sizeof(int) * cols);
+	return M;
+}
+
+float ** initFloatMatrix(float **M , int rows, int cols)
+{
+	int i;
+	M = (float **)malloc(sizeof(float *) * rows);
+	for(i = 0 ; i < rows ; i++)
+		M[i] = (float *)malloc(sizeof(float) * cols);
+	return M;
+}
+
+void free2DMatrix(int **M, int rows)
+{
+	int i;
+	for(i = 0 ; i < rows ; i++)
+		free(M[i]);
+	free(M);	
+	return;
+}
+
+void encode(int inputFD, int *outFiles , int M , int K , int N)
 {
 	// alloc matrix
 	int i,j,k;
@@ -132,16 +149,11 @@ void encode(int inputFD, int *outFiles)
 	outFiles = (int *)malloc(sizeof(int) * M);
 	static char *filePath = "out/file";
 	char *fileName = (char *)malloc(strlen(filePath) +6 );
-	for(i = 0 ; i < M; i++){
-//		strcpy(fileName, filePath);
-//		char name[4];
-//		name[0] = (char)random();
-//		name[1] = (char) random(); 
-//		name[2] = (char) random();
-//       		name[3] = (char) random();
-//		strcpy(&fileName[(strlen(filePath))],name );
-		outFiles[i] = open("/dev/null",O_RDWR | O_CREAT , S_IRWXU);
-	}
+
+	int **A, **B, **C;
+	A = initMatrix(A, M , K);
+	B = initMatrix(B, K , N);
+	C = initMatrix(C, M , N);
 
 	// get size of file
 	struct stat buf;
@@ -151,7 +163,7 @@ void encode(int inputFD, int *outFiles)
 	printf("file size = %zd\n", size);
 	// initialize coder matrix
 
-	for(i = 0 ; i < K ; i++)
+	for(i = 0 ; i < K ; i++)	// identity matrix
 		for(j=0; j < K; j++){
 			if(i == j)
 				A[i][j] = 1;
@@ -180,24 +192,38 @@ void encode(int inputFD, int *outFiles)
 		t1 = clock();
 
 #ifdef USE_PTHREAD
-		multiplyp();
-#else
-		multiplys();
+		multiplyp(C, A , B , M , K , N);
+#endif
+#ifdef USE_SEQUENTIAL
+		multiplys(C, A , B , M , K , N);
 #endif	
-
+#ifdef USE_OPENMP
+		multiplyo(C, A, B, M , K , N);
+#endif
 		t2 = clock();
 			
 		float diff = (((float)t2 - (float)t1) / 1000000.0F ) * 1000;   
 		 printf("\nTIME TAKEN = %f\n",diff);   
 		// copy to different files
 		for(i=0;i< M; i++){
+		strcpy(fileName, filePath);
+		char name[4];
+		sprintf(name, "%d", i);
+		strcpy(&fileName[(strlen(filePath))],name );
+		//outFiles[i] = open("/dev/null",O_RDWR | O_CREAT , S_IRWXU);
+		outFiles[i] = open(fileName,O_RDWR | O_CREAT , S_IRWXU);
+
 			for(j=0 ; j < N ; j++)
 			if(write(outFiles[i], &C[i][j], sizeof(int))==-1){
 				printf("Error during write:%s", strerror(errno));
 			}
+			close(outFiles[i]);
 		}
 	}	// repeat
 
+	free2DMatrix(A, M);
+	free2DMatrix(B, K);
+	free2DMatrix(C, M);
 	free(outFiles);
 }
 /*
@@ -246,13 +272,13 @@ void decode(int fd, int* outputFiles, int n, int m, int *missingBlockNumbers, in
 			B[i+n][j] = power(j, i);
 		}
 
-//	float **BDash = invert(B, missingBlockNumbers, (n + m) , n);
-
-	float **BDash = (float **)malloc (sizeof (float *) * K);  //F-- distribution matrix
-	for(i = 0; i < K; i++){
-		BDash[i] = (float *)malloc(sizeof(float) * K);
-	}
-
+	float **BDash = invert(B, missingBlockNumbers, (n + m) , n);
+//
+//	float **BDash = (float **)malloc (sizeof (float *) * K);  //F-- distribution matrix
+//	for(i = 0; i < K; i++){
+//		BDash[i] = (float *)malloc(sizeof(float) * K);
+//	}
+//
 	bool done = false;
 	while(!done){
 		// intitalize R - data + parity matrix
@@ -304,11 +330,19 @@ void decode(int fd, int* outputFiles, int n, int m, int *missingBlockNumbers, in
 */
 int main(int argc, char *argv[])
 {
-	if(argc != 2){
-		printf("Usage ./rs_ec <filename>\n \
-		\tfilename - name of the input file to be encoded\n");
+	if(argc != 5){
+		printf("Usage ./rs_ec <filename> M K N\n" 
+		"\tfilename - name of the input file to be encoded\n" 
+		"\tM - data+parity blocks \n"
+		"\tK - data blocks \n"
+		"\tN - dataBlockSize (amount of data read * 4 bytes)\n");
 		return 1;
 	}
+
+	int M, K, N;
+	M = atoi(argv[2]);
+	K = atoi(argv[3]);
+	N = atoi(argv[4]);
 
 	int fd = open(argv[1],O_RDONLY);
 	if(fd < 0){
@@ -330,16 +364,11 @@ int main(int argc, char *argv[])
 	}
 
 	int *outFiles;
-/*
-	if(M >= 10){ // n + m 
-		printf("Cannot create more than 10 out files. Please fix file naming convention in encode function\n");
-		assert(0);
-	}
-*/
+
 	printf("Encode Start...\n");
 
 	// TODO : Handle outFile Management outside encode.
-	encode(fd , outFiles);
+	encode(fd , outFiles, M , K, N);
 	printf("Encode Completed!\n");
 	close(fd);
 /*
@@ -358,7 +387,7 @@ int main(int argc, char *argv[])
 	bool skipFileDescriptor = false;
 	int count=0;
 	int i, j;
-	char *outFileName = (char *)malloc(strlen(outFilePath) +3 );
+	char *outFileName = (char *)malloc(strlen(outFilePath) +6 );
 
 	for(i = 0 ; i < M; i++){
 		skipFileDescriptor = false;
@@ -371,9 +400,12 @@ int main(int argc, char *argv[])
 		if(skipFileDescriptor)
 			continue;	// move to next file among data + parity files.
 		strcpy(outFileName, outFilePath);
-		printf("i = %d, filestr = %c", i, (char)(i+48));
-		outFileName[(strlen(outFilePath))] = (char)(i + 48);
-		outFileName[strlen(outFilePath)+1] = '\0';
+		char name[4];
+		sprintf(name,"%d",i);
+	//	printf("i = %d, filestr = %c", i, (char)(i+48));
+	//	outFileName[(strlen(outFilePath))] = (char)(i + 48);
+	//	outFileName[strlen(outFilePath)+1] = '\0';
+		strcpy(&outFileName[strlen(outFilePath)],name);		
 		outFiles[count] = open(outFileName,O_RDONLY);
 		if(outFiles[count] == -1){
 			printf("File %s open failed %s\n",outFileName, strerror(errno));
@@ -387,7 +419,9 @@ int main(int argc, char *argv[])
 	free(outFileName);
 
 	printf("Decode Start...\n");
-//	decode(fd, outFiles , K , M-K , missingBlockNumbers, 1);
+	decode(fd, outFiles , K , M-K , missingBlockNumbers, 1);
+	for(i=0; i < M ; i++)
+		close(outFiles[i]);
 	free (outFiles);
 	printf("Decode End\n");
 */

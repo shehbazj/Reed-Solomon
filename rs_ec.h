@@ -8,10 +8,18 @@
 #include<stdio.h>
 #include<stdlib.h>
 
-#define M  1000	// n + m : data + parity blocks
-#define K 998	// n : data blocks
-#define N  1000 // datablock size
+#define SET_AFFINITY 
 
 
-//int NUM_THREADS = 10;
+// uncomment for using SEQUENTIAL
+
+//#define USE_SEQUENTIAL
+
+// uncomment for using PTHREAD
+
+//#define USE_PTHREAD
+
+// uncomment for using OpenMP 
+ #define USE_OPENMP
+
 #endif
