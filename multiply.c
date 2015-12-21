@@ -50,13 +50,26 @@ void *runner(void *s) {
 	int from = slice;
 	int to = slice + 1;
 	int i,j,k;
+	
+	#ifdef TRANSPOSE
 	for(i = from ; i < to ; i++){
-			for(k = 0; k < K ; k++){
 		for(j=0; j< N ; j++){
+			for(k = 0; k < K ; k++){
+				C[i][j] += C[i][j] + A[i][k] * B[j][k];
+			}
+		}
+	}
+
+	#else
+	for(i = from ; i < to ; i++){
+		for(j=0; j< N ; j++){
+			for(k = 0; k < K ; k++){
 				C[i][j] += C[i][j] + A[i][k] * B[k][j];
 			}
 		}
 	}
+	#endif
+
 }
 
 void multiplyp(int **C, int **A, int **B, int M, int K, int N)

@@ -180,6 +180,7 @@ void encode(int inputFD, int *outFiles , int M , int K , int N)
 		}
 
 	bool done = false;
+	int pthread_count = 0;
 	while(!done){
 		// initialize B - data matrix
 		// intitalize D  - transpose data matrix.
@@ -204,7 +205,12 @@ void encode(int inputFD, int *outFiles , int M , int K , int N)
 		t1 = clock();
 
 #ifdef USE_PTHREAD
+#ifdef TRANSPOSE
+		multiplyp(C, A , D , M , K , N);
+#else
 		multiplyp(C, A , B , M , K , N);
+#endif
+pthread_count++;
 #endif
 #ifdef USE_SEQUENTIAL
 #ifdef TRANSPOSE
@@ -236,6 +242,8 @@ void encode(int inputFD, int *outFiles , int M , int K , int N)
 			close(outFiles[i]);
 		}
 	}	// repeat
+
+	printf("no of times pthread_create was called = %d\n", pthread_count);
 
 	free2DMatrix(A, M);
 #ifdef TRANSPOSE
@@ -359,12 +367,12 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-#ifdef TRANSPOSE
-#ifndef SEQUENTIAL
-	printf("Transpose currently implemented only for SEQUENTIAL, please comment out transpose\n");
-	exit(0);
-#endif
-#endif
+//#ifdef TRANSPOSE
+//#ifndef SEQUENTIAL
+//	printf("Transpose currently implemented only for SEQUENTIAL, please comment out transpose\n");
+//	exit(0);
+//#endif
+//#endif
 
 
 	int M, K, N;
