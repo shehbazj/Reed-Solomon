@@ -4,12 +4,12 @@
 #define _GNU_SOURCE             /* See feature_test_macros(7) */
 #include <sched.h>
 
-#include<pthread.h>
 #include<stdio.h>
 #include<stdlib.h>
 
 #define SET_AFFINITY 
 
+#define TRANSPOSE
 
 // uncomment for using SEQUENTIAL
 
@@ -17,9 +17,9 @@
 
 // uncomment for using PTHREAD
 
-//#define USE_PTHREAD
+#define USE_PTHREAD
 
 // uncomment for using OpenMP 
- #define USE_OPENMP
+//#define USE_OPENMP
 
 #endif

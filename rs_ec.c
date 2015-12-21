@@ -150,9 +150,13 @@ void encode(int inputFD, int *outFiles , int M , int K , int N)
 	static char *filePath = "out/file";
 	char *fileName = (char *)malloc(strlen(filePath) +6 );
 
-	int **A, **B, **C;
+	int **A, **B, **C, **D;
 	A = initMatrix(A, M , K);
+#ifdef TRANSPOSE
+	D = initMatrix(D, N , K);
+#else
 	B = initMatrix(B, K , N);
+#endif
 	C = initMatrix(C, M , N);
 
 	// get size of file
@@ -177,15 +181,23 @@ void encode(int inputFD, int *outFiles , int M , int K , int N)
 
 	bool done = false;
 	while(!done){
-		// intitalize D - data matrix
+		// initialize B - data matrix
+		// intitalize D  - transpose data matrix.
+		// note that D is transpose of earlier B matrix.
 		for(i=0; i < K ; i++){
 			for(j=0; j < N ; j++){
+			#ifdef TRANSPOSE
+	       			int bytesRead = read(inputFD, &D[j][i], sizeof(int));
+				if(bytesRead  == 0){
+					done = true;
+				}
+				
+			#else
 	       			int bytesRead = read(inputFD, &B[i][j], sizeof(int));
 				if(bytesRead  == 0){
 					done = true;
-				}/*else{	// check if data was being read
-					printf("read %d data\n", bytesRead);
-				}*/
+				}
+			#endif
 			}
 		}
 		clock_t t1, t2;
@@ -195,7 +207,11 @@ void encode(int inputFD, int *outFiles , int M , int K , int N)
 		multiplyp(C, A , B , M , K , N);
 #endif
 #ifdef USE_SEQUENTIAL
+#ifdef TRANSPOSE
+		multiplys(C, A , D , M , K , N);
+#else
 		multiplys(C, A , B , M , K , N);
+#endif
 #endif	
 #ifdef USE_OPENMP
 		multiplyo(C, A, B, M , K , N);
@@ -222,7 +238,11 @@ void encode(int inputFD, int *outFiles , int M , int K , int N)
 	}	// repeat
 
 	free2DMatrix(A, M);
+#ifdef TRANSPOSE
+	free2DMatrix(D, N);
+#else
 	free2DMatrix(B, K);
+#endif
 	free2DMatrix(C, M);
 	free(outFiles);
 }
@@ -338,6 +358,14 @@ int main(int argc, char *argv[])
 		"\tN - dataBlockSize (amount of data read * 4 bytes)\n");
 		return 1;
 	}
+
+#ifdef TRANSPOSE
+#ifndef SEQUENTIAL
+	printf("Transpose currently implemented only for SEQUENTIAL, please comment out transpose\n");
+	exit(0);
+#endif
+#endif
+
 
 	int M, K, N;
 	M = atoi(argv[2]);

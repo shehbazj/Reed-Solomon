@@ -84,6 +84,15 @@ void multiplys(int **C, int **A, int **B, int M, int K, int N)
 {
 	int i,j,k;
 	// multiply. and store product in C
+#ifdef TRANSPOSE
+	for(i = 0 ; i < M ; i++){
+		for(j=0; j< N ; j++){
+			for(k = 0; k < K ; k++){
+				C[i][j] += C[i][j] + A[i][k] * B[j][k];
+			}
+		}
+	}
+#else
 	for(i = 0 ; i < M ; i++){
 			for(k = 0; k < K ; k++){
 		for(j=0; j< N ; j++){
@@ -91,6 +100,7 @@ void multiplys(int **C, int **A, int **B, int M, int K, int N)
 			}
 		}
 	}
+#endif
 }
 
 #endif
